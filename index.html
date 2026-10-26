@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Art Studio</title>
+<style>
+  :root {
+    --bg: #14151a; --panel: #1d1f27; --line: #2d303b; --text: #e8e9ee; --muted: #9296a6;
+    --accent: #ffb547;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
+  .app { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); padding: 20px; overflow-y: auto; }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  h1 span { color: var(--accent); }
+  label { display: block; margin: 14px 0 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  label b { float: right; color: var(--text); font-weight: 500; text-transform: none; letter-spacing: 0; }
+  textarea, select, input[type=text] {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 10px; font: inherit;
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; background: transparent; cursor: pointer; }
+  input[type=range]:focus { outline: none; }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--accent) var(--p, 50%), var(--line) var(--p, 50%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -6px;
+    border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--accent);
+  }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line); }
+  input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+  input[type=range]::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--accent);
+  }
+  input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px #ffb54755; }
+  input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px #ffb54755; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  input[type=color] { width: 100%; height: 34px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; }
+  .check { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--text); text-transform: none; font-size: 14px; letter-spacing: 0; }
+  button, .btn {
+    display: inline-block; text-align: center; cursor: pointer; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); border-radius: 8px; padding: 9px 12px; font: inherit;
+  }
+  button:hover, .btn:hover { border-color: var(--accent); }
+  .primary { background: var(--accent); color: #1b1300; border-color: var(--accent); font-weight: 600; }
+  .drop { margin-top: 6px; padding: 16px; border: 1.5px dashed var(--line); border-radius: 10px; text-align: center; color: var(--muted); cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--text); }
+  .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .style { padding: 8px 8px 10px; background: #fff; color: #333; border-radius: 10px; border: 2px solid transparent; }
+  .style canvas { width: 100%; height: auto; display: block; border-radius: 4px; box-shadow: none; aspect-ratio: 1; }
+  .style span { display: block; margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+  .style.active { border-color: var(--accent); }
+  details { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+  details[open] { padding-bottom: 14px; }
+  details > :not(summary) { margin-left: 14px; margin-right: 14px; }
+  details > select, details > input[type=range] { width: calc(100% - 28px); margin-left: 14px; margin-right: 14px; }
+  details > .row { margin-left: 14px; margin-right: 14px; }
+  summary {
+    display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none;
+    padding: 12px 14px; font-size: 14px; font-weight: 600; color: var(--text); user-select: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "⚙"; color: var(--accent); margin-right: 8px; }
+  summary::after { content: "▾"; margin-left: auto; color: var(--accent); font-size: 18px; transition: transform .2s; }
+  details[open] > summary::after { transform: rotate(180deg); }
+  summary:hover { background: #ffffff0a; border-radius: 10px; }
+  main { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; }
+  canvas { width: min(100%, 78vh); height: auto; aspect-ratio: 1; border-radius: 14px; box-shadow: 0 10px 40px #0008; background: #fff; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .err { color: #ff7b7b; }
+  @media (max-width: 800px) { .app { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside autocomplete="off">
+    <h1>QR <span>Art</span> Studio</h1>
+
+    <label for="text">Content</label>
+    <textarea autocomplete="off" id="text" spellcheck="false">https://example.com</textarea>
+
+    <label>Image</label>
+    <div class="drop" id="drop">Drop, paste or click to choose an image</div>
+    <input autocomplete="off" type="file" id="file" accept="image/*" hidden>
+    <div class="row" style="margin-top:8px">
+      <button id="sample">Sample art</button>
+      <button id="clear">No image</button>
+    </div>
+
+    <label>Style</label>
+    <div class="styles" id="styles"></div>
+
+    <details>
+      <summary>Fine-tune settings</summary>
+
+      <label for="ver">Detail (min. QR version) <b id="verV"></b></label>
+      <input autocomplete="off" type="range" id="ver" min="1" max="40" step="1" value="14">
+
+      <label for="zoom">Image zoom <b id="zoomV"></b></label>
+      <input autocomplete="off" type="range" id="zoom" min="0.5" max="1.5" step="0.05" value="1">
+
+      <label for="thr">Background cutoff <b id="thrV"></b></label>
+      <input autocomplete="off" type="range" id="thr" min="120" max="255" step="1" value="245">
+
+      <label for="layer">Image layer</label>
+      <select autocomplete="off" id="layer">
+        <option value="smooth">Smooth image + center dots</option>
+        <option value="blocks">Colored blocks</option>
+        <option value="dots">Colored dots only</option>
+      </select>
+
+      <label for="style">Module shape</label>
+      <select autocomplete="off" id="style">
+        <option value="square">Squares</option>
+        <option value="rounded">Rounded squares</option>
+        <option value="circle">Dots</option>
+      </select>
+
+      <label for="dot">Module size outside image <b id="dotV"></b></label>
+      <input autocomplete="off" type="range" id="dot" min="0.2" max="1" step="0.01" value="0.9">
+
+      <label for="ink">Outside strength <b id="inkV"></b></label>
+      <input autocomplete="off" type="range" id="ink" min="0.2" max="1" step="0.01" value="1">
+
+      <label for="idot">Dot size over image <b id="idotV"></b></label>
+      <input autocomplete="off" type="range" id="idot" min="0.2" max="0.9" step="0.01" value="0.5">
+
+      <label for="fshape">Finder pattern shape</label>
+      <select autocomplete="off" id="fshape">
+        <option value="square">Solid squares (scans best)</option>
+        <option value="circle">Dots</option>
+      </select>
+      <label class="check"><input autocomplete="off" type="checkbox" id="fcol" checked> Color finder patterns from image</label>
+
+      <label for="ecc">Error correction</label>
+      <select autocomplete="off" id="ecc">
+        <option value="L">L – 7%</option>
+        <option value="M">M – 15%</option>
+        <option value="Q">Q – 25%</option>
+        <option value="H" selected>H – 30% (best for art)</option>
+      </select>
+
+      <div class="row">
+        <div><label for="dark">Dark</label><input autocomplete="off" type="color" id="dark" value="#101218"></div>
+        <div><label for="light">Light</label><input autocomplete="off" type="color" id="light" value="#ffffff"></div>
+      </div>
+    </details>
+
+    <div class="row" style="margin-top:20px">
+      <button class="primary" id="download">Download PNG</button>
+    </div>
+  </aside>
+
+  <main>
+    <canvas id="cv" width="1200" height="1200"></canvas>
+    <div class="meta" id="meta"></div>
+  </main>
+</div>
+
+<script src="qr.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
